@@ -27,6 +27,11 @@ app.post('/webhook', async (req, res) => {
 
     const body = req.body;
 
+    // --- NEW LOGGING: See exactly what Meta is sending ---
+    console.log("📥 ================ INCOMING WEBHOOK ================");
+    console.log(JSON.stringify(body, null, 2));
+    console.log("====================================================");
+
     if (body.object && body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]) {
         const message = body.entry[0].changes[0].value.messages[0];
         const senderPhone = message.from;
@@ -35,6 +40,7 @@ app.post('/webhook', async (req, res) => {
         if (message.type === 'text') {
             const text = message.text.body.toLowerCase();
             if (text.includes('i want to attend')) {
+                console.log(`✅ Detected "I want to attend" from ${senderPhone}. Sending buttons...`);
                 await sendInteractiveButtons(senderPhone);
             }
         }
@@ -43,9 +49,10 @@ app.post('/webhook', async (req, res) => {
         if (message.type === 'interactive') {
             const buttonReply = message.interactive.button_reply;
             if (buttonReply.id === 'confirm') {
+                console.log(`✅ ${senderPhone} confirmed. Sending QR code...`);
                 await sendQRCodeImage(senderPhone);
             } else if (buttonReply.id === 'decline') {
-                // Updated decline message
+                console.log(`❌ ${senderPhone} declined. Sending thank you message...`);
                 await sendTextMessage(senderPhone, "thanks to participate");
             }
         }
@@ -62,7 +69,6 @@ async function sendInteractiveButtons(to) {
         type: "interactive",
         interactive: {
             type: "button",
-            // Updated body text
             body: { text: "Please confirm your attendance" },
             action: {
                 buttons: [
@@ -76,7 +82,6 @@ async function sendInteractiveButtons(to) {
 }
 
 async function sendQRCodeImage(to) {
-    // Generate a dynamic QR code using a free API
     const guestData = encodeURIComponent(`CONFIRMED_GUEST_${to}_TICKET`);
     const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${guestData}`;
 
@@ -87,7 +92,6 @@ async function sendQRCodeImage(to) {
         type: "image",
         image: {
             link: qrImageUrl,
-            // Added caption to the QR code image
             caption: "here is your qr code"
         }
     };
@@ -107,13 +111,19 @@ async function sendTextMessage(to, text) {
 
 async function makeWhatsAppAPIRequest(data) {
     try {
-        await axios.post(
+        const response = await axios.post(
             `https://graph.facebook.com/v21.0/${WA_PHONE_NUMBER_ID}/messages`,
             data,
             { headers: { Authorization: `Bearer ${WA_ACCESS_TOKEN}` } }
         );
+        console.log("📤 Message sent successfully! Message ID:", response.data.messages[0].id);
     } catch (error) {
-        console.error("Error sending message:", error.response?.data || error.message);
+        // --- NEW LOGGING: See exactly why Meta rejected the message ---
+        console.error("🚨 ================ WHATSAPP API ERROR ================");
+        console.error("Status:", error.response?.status);
+        console.error("Data:", JSON.stringify(error.response?.data, null, 2));
+        console.error("Message:", error.message);
+        console.error("======================================================");
     }
 }
 
