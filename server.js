@@ -45,7 +45,8 @@ app.post('/webhook', async (req, res) => {
             if (buttonReply.id === 'confirm') {
                 await sendQRCodeImage(senderPhone);
             } else if (buttonReply.id === 'decline') {
-                await sendTextMessage(senderPhone, "We are sorry you can't make it. Hope to see you next time!");
+                // Updated decline message
+                await sendTextMessage(senderPhone, "thanks to participate");
             }
         }
     }
@@ -61,7 +62,8 @@ async function sendInteractiveButtons(to) {
         type: "interactive",
         interactive: {
             type: "button",
-            body: { text: "Thank you for scanning! Are you attending the event?" },
+            // Updated body text
+            body: { text: "Please confirm your attendance" },
             action: {
                 buttons: [
                     { type: "reply", reply: { id: "confirm", title: "Confirm" } },
@@ -74,7 +76,7 @@ async function sendInteractiveButtons(to) {
 }
 
 async function sendQRCodeImage(to) {
-    // Generate a dynamic QR code using a free API (perfect for stateless hosting like Render)
+    // Generate a dynamic QR code using a free API
     const guestData = encodeURIComponent(`CONFIRMED_GUEST_${to}_TICKET`);
     const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${guestData}`;
 
@@ -84,7 +86,9 @@ async function sendQRCodeImage(to) {
         to: to,
         type: "image",
         image: {
-            link: qrImageUrl
+            link: qrImageUrl,
+            // Added caption to the QR code image
+            caption: "here is your qr code"
         }
     };
     await makeWhatsAppAPIRequest(payload);
