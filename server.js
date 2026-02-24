@@ -36,11 +36,12 @@ app.post('/webhook', async (req, res) => {
         const message = body.entry[0].changes[0].value.messages[0];
         const senderPhone = message.from;
 
-        // Scenario A: User sends the pre-filled text from the physical QR Code
+// Scenario A: User sends the pre-filled text from the physical QR Code
         if (message.type === 'text') {
             const text = message.text.body.toLowerCase();
-            if (text.includes('i want to attend')) {
-                console.log(`✅ Detected "I want to attend" from ${senderPhone}. Sending buttons...`);
+            // Changed to look specifically for 'attending'
+            if (text.includes('attending')) {
+                console.log(`✅ Detected "Attending" from ${senderPhone}. Sending buttons...`);
                 await sendInteractiveButtons(senderPhone);
             }
         }
